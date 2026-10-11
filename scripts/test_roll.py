@@ -126,6 +126,109 @@ class LeadershipTests(unittest.TestCase):
         self.assertEqual(names, sorted(names))
 
 
+class SpotProxyTests(unittest.TestCase):
+    def test_earliest_unexpired_beats_the_liquid_main(self):
+        trade = date(2026, 10, 9)
+        near = C(2026, 11, 689.5, 80_000, 4_000, expiry=date(2026, 11, 13), code="i")
+        main = C(2027, 1, 684.0, 600_000, 70_000, expiry=date(2027, 1, 14), code="i")
+        far = C(2027, 5, 678.0, 120_000, 6_000, expiry=date(2027, 5, 14), code="i")
+        contracts = [far, main, near]
+        self.assertEqual(roll.pick_virtual_main(contracts)["display"], "i2701")
+        self.assertEqual(roll.pick_spot_proxy(contracts, trade)["display"], "i2611")
+        rec = roll.build_day(contracts, trade)
+        gap = (date(2027, 5, 14) - date(2026, 11, 13)).days
+        self.assertEqual(rec["contract"], "i2701")
+        self.assertEqual(rec["px"], 684.0)
+        self.assertEqual(rec["spot"], "i2611")
+        self.assertEqual(rec["spot_px"], 689.5)
+        self.assertEqual(rec["far"], "i2705")
+        self.assertEqual(rec["raw"], 689.5 - 678.0)
+        self.assertEqual(rec["gap"], gap)
+        self.assertAlmostEqual(rec["ann"], (689.5 - 678.0) / 689.5 * 365 / gap)
+
+    def test_tie_prefers_higher_score_then_oi(self):
+        trade = date(2026, 10, 9)
+        quiet = C(2026, 12, 100, 10, 1, expiry=date(2026, 11, 13))
+        busy = C(2026, 11, 100, 40, 5, expiry=date(2026, 11, 13))
+        self.assertEqual(roll.pick_spot_proxy([quiet, busy], trade)["display"], "m2611")
+        # Same score 15. Higher open interest wins over higher volume.
+        oi_heavy = C(2026, 11, 100, 12, 3, expiry=date(2026, 11, 13))
+        vol_heavy = C(2026, 12, 100, 10, 5, expiry=date(2026, 11, 13))
+        self.assertEqual(roll.pick_spot_proxy([vol_heavy, oi_heavy], trade)["display"], "m2611")
+
+    def test_expired_contract_is_not_the_proxy(self):
+        trade = date(2026, 10, 9)
+        dead = C(2026, 9, 200, 99_000, 99_000, expiry=date(2026, 9, 15), code="i")
+        near = C(2026, 11, 100, 10, 1, expiry=date(2026, 11, 13), code="i")
+        self.assertEqual(roll.pick_spot_proxy([dead, near], trade)["display"], "i2611")
+        # Liquidity main can still be the expired contract. Far stays the
+        # later month, and basis is empty because that far leg is the proxy.
+        rec = roll.build_day([dead, near], trade)
+        self.assertEqual(rec["contract"], "i2609")
+        self.assertEqual(rec["spot"], "i2611")
+        self.assertEqual(rec["far"], "i2611")
+        self.assertIsNone(rec["ann"])
+        self.assertIsNone(rec["raw"])
+
+    def test_far_stays_later_than_main_when_proxy_is_after_main(self):
+        trade = date(2026, 10, 9)
+        main = C(2026, 9, 100, 9_000, 1_000, expiry=date(2026, 9, 14), code="i")
+        spot = C(2026, 11, 110, 50, 5, expiry=date(2026, 11, 13), code="i")
+        far = C(2027, 1, 90, 500, 50, expiry=date(2027, 1, 14), code="i")
+        rec = roll.build_day([main, spot, far], trade)
+        self.assertEqual(rec["contract"], "i2609")
+        self.assertEqual(rec["spot"], "i2611")
+        self.assertEqual(rec["far"], "i2701")
+        gap = (date(2027, 1, 14) - date(2026, 11, 13)).days
+        self.assertEqual(rec["gap"], gap)
+        self.assertAlmostEqual(rec["ann"], (110 - 90) / 110 * 365 / gap)
+
+    def test_far_expiry_not_after_proxy_leaves_basis_empty(self):
+        trade = date(2026, 10, 9)
+        main = C(2026, 8, 100, 9_000, 100, expiry=date(2026, 8, 14), code="i")
+        far = C(2026, 9, 95, 800, 80, expiry=date(2026, 9, 15), code="i")
+        spot = C(2026, 11, 110, 10, 1, expiry=date(2026, 11, 13), code="i")
+        rec = roll.build_day([main, far, spot], trade)
+        self.assertEqual(rec["far"], "i2609")
+        self.assertEqual(rec["spot"], "i2611")
+        self.assertLessEqual(rec["gap"], 0)
+        self.assertIsNone(rec["ann"])
+        self.assertIsNone(rec["raw"])
+
+    def test_short_gap_between_proxy_and_far_is_not_annualized(self):
+        trade = date(2026, 10, 9)
+        spot = C(2026, 10, 100, 10, 1, expiry=date(2026, 11, 13))
+        main = C(2026, 11, 200, 5_000, 500, expiry=date(2026, 11, 14))
+        far = C(2026, 12, 90, 400, 40, expiry=date(2026, 11, 16))
+        rec = roll.build_day([spot, main, far], trade)
+        self.assertEqual(rec["spot"], "m2610")
+        self.assertEqual(rec["contract"], "m2611")
+        self.assertEqual(rec["far"], "m2612")
+        self.assertEqual(rec["gap"], 3)
+        self.assertEqual(rec["raw"], 100 - 90)
+        self.assertIsNone(rec["ann"])
+
+    def test_expiry_day_still_counts_as_unexpired(self):
+        trade = date(2026, 11, 13)
+        spot = C(2026, 11, 100, 10, 1, expiry=date(2026, 11, 13))
+        later = C(2027, 1, 90, 9_000, 100, expiry=date(2027, 1, 14))
+        self.assertEqual(roll.pick_spot_proxy([later, spot], trade)["display"], "m2611")
+
+    def test_liquid_curve_keeps_an_illiquid_proxy(self):
+        contracts = [
+            C(2026, 11, 689.5, 1_000, 10, expiry=date(2026, 11, 13), code="i"),
+            C(2027, 1, 684.0, 2_000_000, 300_000, expiry=date(2027, 1, 14), code="i"),
+            C(2027, 5, 678.0, 800_000, 70_000, expiry=date(2027, 5, 14), code="i"),
+        ]
+        main = roll.pick_virtual_main(contracts)
+        far = roll.pick_far_leg(contracts, main)
+        spot = roll.pick_spot_proxy(contracts, date(2026, 10, 9))
+        terms = roll.select_liquid_terms(contracts, main, far, k=2, cap=4, floor=0.20, spot=spot)
+        names = [c["display"] for c in terms]
+        self.assertIn("i2611", names)
+        self.assertEqual(names, sorted(names))
+
+
 class BasisTests(unittest.TestCase):
     def test_backwardation_is_positive(self):
         ann = roll.annualized_basis(3416, 3023, 120)
@@ -146,6 +249,7 @@ class BasisTests(unittest.TestCase):
         ]
         rec = roll.build_day(contracts, date(2026, 10, 9))
         self.assertEqual(rec["contract"], "m2701")
+        self.assertEqual(rec["spot"], "m2701")
         self.assertEqual(rec["far"], "m2705")
         self.assertGreater(rec["ann"], 0)
         self.assertEqual(rec["raw"], 3416 - 3023)
@@ -246,6 +350,7 @@ class AdjustAndPercentileTests(unittest.TestCase):
         self.assertEqual([r["contract"] for r in rows], ["m2405", "m2409"])
         self.assertEqual(rows[1]["out"], 110)
         self.assertEqual(rows[0]["far"], "m2409")
+        self.assertEqual(rows[0]["spot"], "m2405")
         self.assertGreater(rows[0]["ann"], 0)
 
 

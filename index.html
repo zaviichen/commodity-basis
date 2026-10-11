@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>中国商品期货贴水跟踪</title>
-  <meta name="description" content="SHFE、DCE、CZCE、INE、广期所活跃商品的主力连续、次活跃远月年化贴水，以及近3年贴水分位和价格分位。静态页读取 data/latest.json。" />
+  <meta name="description" content="SHFE、DCE、CZCE、INE、广期所活跃商品的近月代理现货、主力连续、次活跃远月年化贴水，以及近3年贴水分位和价格分位。静态页读取 data/latest.json。" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet" />
@@ -97,6 +97,7 @@
     .overview thead th[aria-sort="descending"] .sort-btn { color: #f8fafc; }
     .row-virtual { background: rgba(6, 78, 59, 0.35); }
     .row-far { background: rgba(12, 74, 110, 0.28); }
+    .row-spot { background: rgba(120, 53, 15, 0.35); }
     @media (min-width: 1280px) {
       .table-wrap { overflow: visible; }
       .overview thead th,
@@ -110,7 +111,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-xl md:text-2xl font-bold tracking-tight">中国商品期货贴水跟踪</h1>
-          <p class="text-slate-400 text-sm mt-1">主力连续 · 按持仓+成交挑活跃期限 · 近 3 年贴水分位与价格分位</p>
+          <p class="text-slate-400 text-sm mt-1">近月代理现货 · 主力连续 · 次活跃远月年化贴水 · 近 3 年分位</p>
         </div>
         <div class="flex items-center gap-3 text-sm">
           <span id="ts" class="text-slate-400 num">—</span>
@@ -124,14 +125,14 @@
     <section class="rounded-xl border border-amber-700/40 bg-amber-950/30 p-4 md:p-5">
       <h2 class="text-amber-300 font-semibold mb-2">这不是股指分红模型</h2>
       <p class="text-slate-300 text-sm leading-relaxed">
-        商品没有分红可扣。远月比主力便宜，记为<span class="text-emerald-300">贴水</span>（近高远低）；远月更贵，记为<span class="text-red-300">升水</span>，多头换月要付升水税。
+        商品没有分红可扣。远月比近月代理便宜，记为<span class="text-emerald-300">贴水</span>（近高远低）；远月更贵，记为<span class="text-red-300">升水</span>。
         曲线来自仓储、资金和便利收益，库存一松就会翻转。交割月还有限仓和仓单，纸面价差不一定成交得了。
       </p>
       <p class="text-slate-300 text-sm leading-relaxed mt-2">
-        <strong class="text-slate-100">主力只有一条。</strong>
-        每个交易日，得分 = 持仓量 + 成交量，最高的那张合约就是当天的主力。谁变成第一，连续序列就换过去并做比率拼接。
-        页面上的合约代码就是这条序列的当前腿，不另列一条交易所主力。
-        对照腿是<strong class="text-sky-300">次活跃远月</strong>：到期更晚、得分最高的一张，豆粕常常是 1 月对 5 月，而不是紧邻的下一月。
+        <strong class="text-amber-200">现货是近月代理，不是现金现货。</strong>
+        当天未到期合约里，离交割最近的一张就是现货代理。不使用港口价、品牌价或厂库价。
+        <strong class="text-slate-100">主力只有一条</strong>，仍是持仓量 + 成交量最高的合约，用来做价格分位，不改叫现货。
+        年化贴水用现货代理对<strong class="text-sky-300">次活跃远月</strong>：到期晚于主力、得分最高的一张，豆粕常常是近月对 5 月，而不是紧邻的下一月。
       </p>
       <div class="mt-3 flex flex-wrap gap-3 text-xs">
         <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-600"></span>贴水（远月更便宜）绿</span>
@@ -158,6 +159,7 @@
           <thead>
             <tr class="text-left text-xs text-slate-400 border-b border-slate-800">
               <th class="font-medium" data-sort="name" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>品种</span><span class="sort-mark" aria-hidden="true"></span></button></th>
+              <th class="font-medium" data-sort="spot" aria-sort="none" scope="col" title="近月代理现货，不是港口或现金现货"><button type="button" class="sort-btn"><span>现货</span><span class="sort-mark" aria-hidden="true"></span></button></th>
               <th class="font-medium" data-sort="main" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>主力</span><span class="sort-mark" aria-hidden="true"></span></button></th>
               <th class="font-medium text-right" data-sort="price" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true"></span><span>最新</span></button></th>
               <th class="font-medium text-right hidden sm:table-cell" data-sort="dte" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true"></span><span>剩余</span></button></th>
@@ -168,7 +170,7 @@
             </tr>
           </thead>
           <tbody id="overviewBody">
-            <tr><td colspan="8" class="px-3 py-8 text-center text-slate-500">加载中…</td></tr>
+            <tr><td colspan="9" class="px-3 py-8 text-center text-slate-500">加载中…</td></tr>
           </tbody>
         </table>
       </div>
@@ -179,11 +181,11 @@
     <footer class="rounded-xl border border-slate-800 bg-slate-900/50 p-5 text-sm text-slate-400 space-y-3">
       <h2 class="text-slate-200 font-semibold">方法论与商品侧注意</h2>
       <ul class="list-disc list-inside space-y-1.5 leading-relaxed">
-        <li><strong class="text-slate-300">主力</strong>：每个交易日得分 = 持仓量 + 成交量，最高者即当天的腿。并列时先比持仓，再比成交，再取更近到期。领先换手就换月，并用比率拼接；末日价格就是可交易价。没有第二条「主力」。</li>
-        <li><strong class="text-slate-300">次活跃远月</strong>：到期月份晚于主力、得分最高的合约。曲线上其他行只是活跃期限，用来看结构。</li>
-        <li><strong class="text-slate-300">价差</strong> = 主力价 − 次活跃远月价。正数表示远月更便宜。</li>
-        <li><strong class="text-slate-300">年化贴水</strong> = 价差 / 主力价 × 365 / 两个到期日之差。正 = 贴水，负 = 升水。相距不足 7 个自然日不年化。不扣利率，不用 252。</li>
-        <li><strong class="text-slate-300">不用现货。</strong>港口价、品牌价往往不是交割品。铁矿的干湿吨和品牌升贴水、厂库升贴水，都会把「现货 − 期货」做成伪基差。</li>
+        <li><strong class="text-slate-300">现货</strong>：当天未到期、且有成交或持仓的合约里，到期日最早的一张。这是近月代理现货，不是港口价、品牌价或厂库现金价。并列时先比持仓+成交，再比持仓，再比成交。</li>
+        <li><strong class="text-slate-300">主力</strong>：每个交易日得分 = 持仓量 + 成交量，最高者即当天的腿。并列时先比持仓，再比成交，再取更近到期。领先换手就换月，并用比率拼接；末日价格就是可交易价。没有第二条「主力」。价格分位用这条序列，不把主力改叫现货。</li>
+        <li><strong class="text-slate-300">次活跃远月</strong>：到期月份晚于主力、得分最高的合约。年化贴水的远腿固定用这一张。曲线上其他行只是活跃期限，用来看结构。</li>
+        <li><strong class="text-slate-300">价差</strong> = 现货代理价 − 次活跃远月价。正数表示远月更便宜。远月到期不晚于现货代理时，价差留空。</li>
+        <li><strong class="text-slate-300">年化贴水</strong> = 价差 / 现货代理价 × 365 /（次活跃远月到期日 − 现货代理到期日）。正 = 贴水，负 = 升水。相距不足 7 个自然日不年化。不扣利率，不用 252。</li>
         <li><strong class="text-slate-300">贴水分位</strong>：近 3 个日历年里，年化贴水 ≤ 今天的交易日占比，不含行情日当天。<strong class="text-emerald-300">越高 = 远月折价越深</strong>。低于 30 个交易日不显示。</li>
         <li><strong class="text-slate-300">价格分位</strong>：同一窗口里，比率拼接后的主力价格 ≤ 今天可交易价的占比。<strong class="text-sky-300">越高 = 越接近这段窗口的高位</strong>。这不是贴水。</li>
         <li><strong class="text-slate-300">到期日</strong>是工作日近似，未剔除春节、国庆等法定节假日：上期所金属和黑色为合约月 15 日遇周末顺延；原油、燃料油、低硫燃料油为交割月前最后一个工作日；大商所、郑商所、广期所按合约月第 10 个工作日。</li>
@@ -204,6 +206,7 @@
     const SECTORS = ["全部", "黑色", "油脂油料", "有色贵金属", "能源", "化工", "农产品", "新能源"];
     const SORT_META = {
       name: { label: "品种", type: "str", defaultDir: "asc", pick: (p) => p.name },
+      spot: { label: "现货", type: "str", defaultDir: "asc", pick: (p) => p.spot_proxy && p.spot_proxy.symbol },
       main: { label: "主力", type: "str", defaultDir: "asc", pick: (p) => p.virtual && p.virtual.symbol },
       price: { label: "最新", type: "num", defaultDir: "desc", pick: (p) => p.virtual ? p.virtual.price : null },
       dte: { label: "剩余", type: "num", defaultDir: "asc", pick: (p) => p.virtual ? p.virtual.dte : null },
@@ -387,15 +390,20 @@
 
     function renderOverview(list) {
       if (!list.length) {
-        $("overviewBody").innerHTML = '<tr><td colspan="8" class="px-3 py-8 text-center text-slate-500">这个板块没有品种。</td></tr>';
+        $("overviewBody").innerHTML = '<tr><td colspan="9" class="px-3 py-8 text-center text-slate-500">这个板块没有品种。</td></tr>';
         return;
       }
       $("overviewBody").innerHTML = list.map((p) => {
         const v = p.virtual;
         const f = p.far;
+        const s = p.spot_proxy;
         const ann = f ? f.ann : null;
+        const spotCell = s
+          ? '<div>' + s.symbol + '</div><div class="text-slate-300">' + fmtPx(s.price) + "</div>"
+          : "—";
         return '<tr class="border-b border-slate-800/80 hover:bg-slate-900 cursor-pointer" data-jump="' + p.code + '">' +
           '<td class="px-3 py-2"><div class="font-medium">' + p.name + '</div><div class="text-[11px] text-slate-500">' + p.sector + " · " + p.exchange_name + "</div></td>" +
+          '<td class="px-3 py-2 num" title="近月代理现货，不是港口或现金现货">' + spotCell + "</td>" +
           '<td class="px-3 py-2 num">' + (v ? v.symbol : "—") + "</td>" +
           '<td class="px-3 py-2 num text-right">' + (v ? fmtPx(v.price) : "—") + "</td>" +
           '<td class="px-3 py-2 num text-right text-slate-300 hidden sm:table-cell">' + (v ? fmtDte(v.dte) : "—") + "</td>" +
@@ -419,21 +427,21 @@
         return '<p class="text-sm text-slate-500 px-1">' + (p.error || "暂无活跃合约") + "</p>";
       }
       const body = terms.map((t) => {
-        const cls = t.role === "virtual" ? "row-virtual" : t.role === "far" ? "row-far" : "";
-        const badge = t.role === "virtual"
-          ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white align-middle">主力</span>'
-          : t.role === "far"
-            ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-sky-700 text-white align-middle">次活跃远月</span>'
-            : "";
+        const cls = t.role === "virtual" ? "row-virtual" : t.role === "far" ? "row-far" : (t.is_spot ? "row-spot" : "");
+        const badges = [];
+        if (t.is_spot) badges.push('<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-700 text-white align-middle">现货</span>');
+        if (t.role === "virtual") badges.push('<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white align-middle">主力</span>');
+        if (t.role === "far") badges.push('<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-sky-700 text-white align-middle">次活跃远月</span>');
+        const refRow = isBasisRef(p, t);
         return '<tr class="border-t border-slate-800 ' + cls + '">' +
-          '<td class="px-3 py-2 num">' + t.symbol + badge + "</td>" +
+          '<td class="px-3 py-2 num">' + t.symbol + badges.join("") + "</td>" +
           '<td class="px-3 py-2 num text-right">' + fmtPx(t.price) + "</td>" +
           '<td class="px-3 py-2 num text-right text-slate-300">' + fmtLots(t.volume) + "</td>" +
           '<td class="px-3 py-2 num text-right text-slate-300">' + fmtLots(t.oi) + "</td>" +
           '<td class="px-3 py-2 num text-right text-slate-300">' + fmtLots(t.score) + "</td>" +
           '<td class="px-3 py-2 num text-right">' + fmtDte(t.dte) + "</td>" +
-          '<td class="px-3 py-2 num text-right ' + basisClass(t.raw) + '">' + (t.role === "virtual" ? "—" : fmtPts(t.raw)) + "</td>" +
-          '<td class="px-3 py-2 num text-right ' + basisClass(t.ann) + '">' + (t.role === "virtual" ? "—" : fmtAnn(t.ann)) + "</td>" +
+          '<td class="px-3 py-2 num text-right ' + basisClass(t.raw) + '">' + (refRow ? "—" : fmtPts(t.raw)) + "</td>" +
+          '<td class="px-3 py-2 num text-right ' + basisClass(t.ann) + '">' + (refRow ? "—" : fmtAnn(t.ann)) + "</td>" +
           "</tr>";
       }).join("");
       return '<div class="overflow-x-auto"><table class="min-w-full text-sm">' +
@@ -447,18 +455,46 @@
         '<th class="px-3 py-1 font-medium text-right">近高远低</th>' +
         '<th class="px-3 py-1 font-medium text-right">年化</th>' +
         "</tr></thead><tbody>" + body + "</tbody></table></div>" +
-        '<p class="text-[11px] text-slate-500 mt-2 px-1">得分 = 持仓 + 成交。主力是得分最高的一行。次活跃远月是更远月份里得分最高的一行。近高远低为正表示这两个到期日之间曲线向下（贴水）。</p>';
+        '<p class="text-[11px] text-slate-500 mt-2 px-1">得分 = 持仓 + 成交。现货是到期最早的未到期合约（近月代理，不是港口现货）。主力是得分最高的一行，价格分位用它。次活跃远月是晚于主力的月份里得分最高的一行。表内近高远低和年化都相对现货代理。</p>';
+    }
+
+    function isBasisRef(p, t) {
+      if (p.spot_proxy && p.spot_proxy.symbol) return t.symbol === p.spot_proxy.symbol || t.is_spot;
+      return t.role === "virtual";
+    }
+
+    function legBox(label, sub, symbol, price, title) {
+      return '<div class="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2" title="' + (title || "") + '">' +
+        '<div class="text-[11px] text-slate-500">' + label + (sub ? ' <span class="text-amber-200/80">' + sub + "</span>" : "") + "</div>" +
+        '<div class="num text-sm mt-0.5">' + (symbol || "—") + "</div>" +
+        '<div class="num text-slate-300">' + (symbol ? fmtPx(price) : "—") + "</div>" +
+      "</div>";
+    }
+
+    function cardHeadline(p) {
+      const v = p.virtual;
+      const f = p.far;
+      const s = p.spot_proxy;
+      if (!v) return p.error || "暂无报价";
+      const mainBit = "主力 " + v.symbol + " 按持仓+成交选取，价格分位用它。";
+      const spotBit = s
+        ? "现货代理 " + s.symbol + "（近月合约，不是现金现货）"
+        : "没有未到期的近月合约可作现货代理";
+      if (!s) return spotBit + "。" + mainBit + " 年化贴水不算。";
+      if (!f) return spotBit + "。没有晚于主力的活跃远月，年化贴水不算。" + mainBit;
+      if (f.gap != null && f.gap <= 0) {
+        return spotBit + "。次活跃远月 " + f.symbol + " 不晚于现货代理，年化贴水不算。" + mainBit;
+      }
+      const gapTxt = f.gap == null ? "—" : f.gap;
+      const short = f.ann == null && f.gap != null && f.gap < 7 ? " 间隔不足 7 天，不年化。" : "";
+      return spotBit + " 对次活跃远月 " + f.symbol + "，价差 " + fmtPts(f.raw) + "，间隔 " + gapTxt + " 天。" + short + mainBit;
     }
 
     function cardHTML(p) {
       const v = p.virtual;
       const f = p.far;
+      const s = p.spot_proxy;
       const ann = f ? f.ann : null;
-      const headline = !v
-        ? (p.error || "暂无报价")
-        : (!f
-          ? "主力 " + v.symbol + "，没有更远的活跃月份，年化贴水不算。"
-          : "主力 " + v.symbol + " 对次活跃远月 " + f.symbol + "，价差 " + fmtPts(f.raw) + "，间隔 " + (f.gap == null ? "—" : f.gap) + " 天。");
       return '<article id="card-' + p.code + '" class="scroll-mt-24 rounded-xl border border-slate-800 bg-slate-900 p-4 md:p-5">' +
         '<div class="flex flex-wrap items-start justify-between gap-3">' +
           '<div>' +
@@ -470,8 +506,13 @@
             '<div class="num text-2xl font-semibold ' + basisClass(ann) + '">' + fmtAnn(ann) + "</div>" +
           "</div>" +
         "</div>" +
-        '<p class="text-sm text-slate-300 mt-3">' + headline + "</p>" +
-        '<div class="grid grid-cols-2 gap-3 mt-4 max-w-md">' +
+        '<p class="text-sm text-slate-300 mt-3">' + cardHeadline(p) + "</p>" +
+        '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">' +
+          legBox("现货", "近月代理", s && s.symbol, s && s.price, "离交割最近的未到期合约，不是港口或现金现货") +
+          legBox("主力", "", v && v.symbol, v && v.price, "持仓+成交最高的连续腿，价格分位用它") +
+          legBox("次活跃远月", "", f && f.symbol, f && f.price, "到期晚于主力、得分最高的合约") +
+        "</div>" +
+        '<div class="grid grid-cols-2 gap-3 mt-3 max-w-md">' +
           '<div class="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2" title="' + tipBasis(p) + '">' +
             '<div class="text-[11px] text-slate-500">贴水分位</div>' +
             '<div class="num text-xl font-semibold ' + basisPctClass(p.basis_pct) + '">' + fmtPctile(p.basis_pct) + "</div>" +
@@ -536,13 +577,13 @@
         $("status").className = "px-2 py-0.5 rounded bg-emerald-900 text-emerald-200 text-xs";
         const note = [];
         if (SNAP.as_of) note.push("行情日 " + SNAP.as_of + "。周末和节假日沿用最近交易日。");
-        note.push("年化贴水为正表示次活跃远月更便宜。");
+        note.push("年化贴水为正表示次活跃远月比现货代理更便宜。现货是离交割最近的未到期合约，不是港口或现金现货。");
         $("calendarNote").textContent = note.join(" ");
         render();
       } catch (err) {
         $("status").textContent = "加载失败";
         $("status").className = "px-2 py-0.5 rounded bg-red-900 text-red-200 text-xs";
-        $("overviewBody").innerHTML = '<tr><td colspan="8" class="px-3 py-8 text-center text-red-300">读不到 data/latest.json（' + err.message + "）。请先运行 scripts/fetch_basis.py。</td></tr>";
+        $("overviewBody").innerHTML = '<tr><td colspan="9" class="px-3 py-8 text-center text-red-300">读不到 data/latest.json（' + err.message + "）。请先运行 scripts/fetch_basis.py。</td></tr>";
         $("cards").innerHTML = "";
         $("summaryLine").textContent = "";
       }
