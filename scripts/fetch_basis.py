@@ -32,7 +32,7 @@ LATEST_PATH = DATA / "latest.json"
 CACHE = DATA / "cache"
 
 CST = timezone(timedelta(hours=8))
-SCHEMA = ["d", "main", "px", "far", "far_px", "ann", "raw", "gap", "dte", "oi", "vol", "out"]
+SCHEMA = ["d", "main", "px", "far", "far_px", "ann", "raw", "gap", "dte", "oi", "vol", "out", "spot", "spot_px"]
 UA = "Mozilla/5.0 (compatible; commodity-basis/1.0; +https://github.com/zaviichen/commodity-basis)"
 
 
@@ -246,6 +246,8 @@ def row_to_list(row: dict) -> list:
         int(round(row.get("oi") or 0)),
         int(round(row.get("volume") or 0)),
         round_or_none(row.get("out"), 4),
+        row.get("spot"),
+        round_or_none(row.get("spot_px"), 4),
     ]
 
 
@@ -314,13 +316,14 @@ def spark_from_rows(rows: list[dict], asof: date) -> list[float | None]:
     return roll.downsample(series, 90)
 
 
-def term_payload(contract: dict, main: dict, role: str) -> dict:
+def term_payload(contract: dict, ref: dict, role: str, is_spot: bool) -> dict:
+    """Curve spread versus the spot proxy (or the main, if no proxy exists)."""
     raw = ann = gap = None
-    if role != "virtual":
-        if (contract["year"], contract["month"]) < (main["year"], main["month"]):
-            raw, ann, gap = roll.spread_vs(contract, main)
+    if contract["display"] != ref["display"]:
+        if contract["expiry"] <= ref["expiry"]:
+            raw, ann, gap = roll.spread_vs(contract, ref)
         else:
-            raw, ann, gap = roll.spread_vs(main, contract)
+            raw, ann, gap = roll.spread_vs(ref, contract)
     return {
         "symbol": contract["display"],
         "expiry": contract["expiry"].isoformat(),
@@ -330,6 +333,7 @@ def term_payload(contract: dict, main: dict, role: str) -> dict:
         "score": int(round((contract["oi"] or 0) + (contract["volume"] or 0))),
         "dte": None,
         "role": role,
+        "is_spot": is_spot,
         "raw": round_or_none(raw, 4),
         "ann": round_or_none(ann, 6),
         "gap": gap,
@@ -362,15 +366,20 @@ def live_product(product: dict, today: date, history_rows: list[dict]) -> dict:
     }
     main = roll.pick_virtual_main(contracts) if contracts else None
     far = roll.pick_far_leg(contracts, main) if main else None
+    spot = roll.pick_spot_proxy(contracts, session) if contracts else None
     terms = []
     if main is not None:
-        for c in roll.select_liquid_terms(contracts, main, far):
+        ref = spot if spot is not None else main
+        for c in roll.select_liquid_terms(contracts, main, far, spot=spot):
+            is_spot = spot is not None and c["display"] == spot["display"]
             role = "other"
             if c["display"] == main["display"]:
                 role = "virtual"
             elif far is not None and c["display"] == far["display"]:
                 role = "far"
-            item = term_payload(c, main, role)
+            elif is_spot:
+                role = "spot"
+            item = term_payload(c, ref, role, is_spot)
             item["dte"] = (c["expiry"] - session).days
             terms.append(item)
     meta_start = history_rows[0]["date"].isoformat() if history_rows else None
@@ -391,6 +400,15 @@ def live_product(product: dict, today: date, history_rows: list[dict]) -> dict:
             "score": int(round(main["oi"] + main["volume"])),
             "dte": (main["expiry"] - session).days,
             "expiry": main["expiry"].isoformat(),
+        },
+        "spot_proxy": None if spot is None else {
+            "symbol": spot["display"],
+            "price": round(float(spot["price"]), 4),
+            "oi": int(round(spot["oi"])),
+            "volume": int(round(spot["volume"])),
+            "score": int(round((spot["oi"] or 0) + (spot["volume"] or 0))),
+            "dte": (spot["expiry"] - session).days,
+            "expiry": spot["expiry"].isoformat(),
         },
         "far": None if far is None or live_row is None else {
             "symbol": far["display"],
@@ -530,6 +548,7 @@ def main() -> int:
                 "expiry_rule": product["rule"],
                 "as_of": None,
                 "virtual": None,
+                "spot_proxy": None,
                 "far": None,
                 "basis_pct": None,
                 "basis_n": 0,
@@ -549,6 +568,7 @@ def main() -> int:
             # record the same virtual main the page shows.
             far = snap.get("far") or {}
             virtual = snap["virtual"]
+            spot = snap.get("spot_proxy") or {}
             prev = None
             for row in stored:
                 if row["date"] < session:
@@ -565,6 +585,8 @@ def main() -> int:
                 "px": virtual["price"],
                 "far": far.get("symbol"),
                 "far_px": far.get("price"),
+                "spot": spot.get("symbol"),
+                "spot_px": spot.get("price"),
                 "ann": far.get("ann"),
                 "raw": far.get("raw"),
                 "gap": far.get("gap"),
@@ -579,8 +601,9 @@ def main() -> int:
         ann = (snap.get("far") or {}).get("ann")
         ann_txt = "—" if ann is None else f"{ann * 100:.1f}%"
         virt = (snap.get("virtual") or {}).get("symbol", "—")
+        spot_name = (snap.get("spot_proxy") or {}).get("symbol", "—")
         print(
-            f"  {product['code']} virtual {virt} ann {ann_txt} "
+            f"  {product['code']} spot {spot_name} virtual {virt} ann {ann_txt} "
             f"basis {snap.get('basis_pct')} price {snap.get('price_pct')}",
             flush=True,
         )
@@ -593,16 +616,17 @@ def main() -> int:
             "generated_at": now_cst().isoformat(timespec="seconds"),
             "as_of": max(as_ofs) if as_ofs else None,
             "methodology": {
-                "virtual_main": "单一连续序列：每个交易日得分=持仓量+成交量最高的合约。领先换手则换月拼接，不另设交易所主力。",
+                "virtual_main": "单一连续序列：每个交易日得分=持仓量+成交量最高的合约。领先换手则换月拼接，不另设交易所主力。价格分位用这条序列，不把主力改叫现货。",
                 "tie_break": "得分相同则持仓量更高者优先，再比较成交量，再取更近到期。",
-                "far_leg": "次活跃远月 = 到期晚于主力的合约里得分最高者，不一定是相邻月。",
-                "basis": "(主力价-次活跃远月价)/主力价×365/两个到期日之差（自然日）。正数=远月更便宜=贴水。",
+                "spot_proxy": "现货 = 当天未到期合约里到期最早的一张（近月代理），不是港口价或现金现货。并列时先比持仓+成交，再比持仓，再比成交。",
+                "far_leg": "次活跃远月 = 到期晚于主力的合约里得分最高者，不一定是相邻月。年化贴水的远腿固定用这一张。",
+                "basis": "(现货代理价-次活跃远月价)/现货代理价×365/(次活跃远月到期日-现货代理到期日)。正数=远月更便宜=贴水。远月不晚于现货代理则为空。",
                 "min_gap_days": roll.MIN_GAP_DAYS,
-                "basis_percentile": "近3年年化贴水≤当前值的交易日占比。越高=贴水越深。不含行情日当天。样本<30为null。",
+                "basis_percentile": "近3年年化贴水≤当前值的交易日占比。越高=贴水越深。不含行情日当天。样本<30为null。历史按现货代理对次活跃远月重算。",
                 "price_percentile": "比率拼接后的主力价格≤当前可交易价的占比。越高=越接近近3年高位。末日价格不复权。",
                 "window_years": roll.WINDOW_YEARS,
                 "min_samples": roll.MIN_SAMPLES,
-                "spot": "不使用现货。公开现货往往不是交割品，避免把不可交易的基差当成贴水。",
+                "spot": "页面现货是近月未到期合约代理。不使用港口价、品牌价或厂库现金价。",
                 "history_price": "日K结算价（结算为0时用收盘）。快照曲线用最新价。",
                 "expiry": "未到期合约：上期所金属与黑色为合约月15日遇周末顺延；燃料油/原油/低硫燃料油为交割月前最后工作日；其余为大商所/郑商所/广期所风格的合约月第10个工作日。未剔除法定节假日。",
             },

@@ -1,30 +1,39 @@
-"""Virtual continuous main (虚拟主力) and basis math.
+"""Continuous main (主力), near-month spot proxy (现货代理), and basis math.
 
-There is one continuous series per product. Each session it is the single
-contract with the highest liquidity score. When that leader changes, the
-series splices onto the new contract. This is not a second contract sitting
-beside an exchange 「主力」.
+There is one continuous price series per product. Each session it is the
+single contract with the highest liquidity score. When that leader changes,
+the series splices onto the new contract. This is not a second contract
+sitting beside an exchange 「主力」, and it is not renamed to 现货.
 
 Score
     score = open interest + volume (lots). Ties: higher open interest, then
     higher volume, then the nearer expiry.
 
+Spot proxy (现货代理)
+    Among eligible contracts that have not expired, the earliest expiry.
+    Ties: higher score, then higher open interest, then higher volume.
+    This is a near-month futures proxy, not a cash or port price.
+
 Far leg (次活跃远月)
-    Among contracts with a later expiry than the virtual main, the one with
+    Among contracts with a later expiry month than the main, the one with
     the highest score. Often not the adjacent month (soybean meal 1 vs 5).
+    The basis far leg is this contract even when the spot proxy expires
+    after the main. If the far expiry is not later than the spot proxy,
+    basis is left empty.
 
 Basis
-    raw = P_virtual − P_far
-    ann = raw / P_virtual × 365 / expiry_gap_days
+    raw = P_spot − P_far
+    ann = raw / P_spot × 365 / (far_expiry − spot_expiry)
     Positive means the further contract is cheaper (backwardation, 贴水).
-    Gap under 7 calendar days is not annualized.
+    Gap under 7 calendar days is not annualized. Natural days only; no
+    risk-free rate.
 
 Percentiles
     Trailing 3 calendar years, inclusive of the start date, excluding the
     as-of session. Bare integer percent. Higher basis percentile = deeper
-    discount. Higher price percentile = closer to the window high of the
-    ratio-spliced continuous series (the latest point equals the live price).
-    Fewer than 30 samples → no percentile.
+    discount of the spot-proxy series. Higher price percentile = closer to
+    the window high of the ratio-spliced main (the latest point equals the
+    live main price). Fewer than 30 samples → no percentile.
 """
 
 from __future__ import annotations
@@ -184,6 +193,30 @@ def pick_far_leg(contracts: list[dict], main: dict) -> dict | None:
     return max(pool, key=rank_key)
 
 
+def _spot_key(contract: dict) -> tuple:
+    oi = float(contract.get("oi") or 0)
+    vol = float(contract.get("volume") or 0)
+    # min() wins. Earlier expiry first; a tie goes to the higher score.
+    return (contract["expiry"], -(oi + vol), -oi, -vol)
+
+
+def pick_spot_proxy(contracts: list[dict], trade_date: date) -> dict | None:
+    """Nearest unexpired eligible contract (近月代理现货).
+
+    Unexpired means expiry on or after the session date. Cash and port
+    quotes are not consulted. Ties break by score, then open interest,
+    then volume.
+    """
+    pool = [
+        c
+        for c in contracts
+        if eligible(c) and c.get("expiry") is not None and c["expiry"] >= trade_date
+    ]
+    if not pool:
+        return None
+    return min(pool, key=_spot_key)
+
+
 def annualized_basis(p_near: float | None, p_far: float | None, gap_days: int | None,
                      min_gap: int = MIN_GAP_DAYS) -> float | None:
     if p_near is None or p_far is None or gap_days is None:
@@ -205,8 +238,8 @@ def spread_vs(earlier: dict, later: dict) -> tuple[float | None, float | None, i
 
 def select_liquid_terms(contracts: list[dict], main: dict, far: dict | None,
                         k: int = LIQUID_COUNT, cap: int = LIQUID_CAP,
-                        floor: float = LIQUID_FLOOR) -> list[dict]:
-    """Liquid curve, expiry order. Always includes the virtual main and far leg."""
+                        floor: float = LIQUID_FLOOR, spot: dict | None = None) -> list[dict]:
+    """Liquid curve, expiry order. Always includes main, far leg, and spot proxy."""
     pool = [c for c in contracts if eligible(c)]
     ranked = sorted(pool, key=rank_key, reverse=True)
     chosen: list[dict] = []
@@ -222,6 +255,8 @@ def select_liquid_terms(contracts: list[dict], main: dict, far: dict | None,
     add(main)
     if far is not None:
         add(far)
+    if spot is not None:
+        add(spot)
     leader_score = rank_key(main)[0]
     for c in ranked:
         if len(chosen) >= cap:
@@ -239,20 +274,25 @@ def build_day(contracts: list[dict], trade_date: date) -> dict | None:
     if main is None:
         return None
     far = pick_far_leg(contracts, main)
+    spot = pick_spot_proxy(contracts, trade_date)
     raw = ann = gap = None
     far_px = None
     far_name = None
     if far is not None:
-        # Virtual main is the nearer of the two by construction.
-        raw, ann, gap = spread_vs(main, far)
         far_px = float(far["price"])
         far_name = far["display"]
+        # Far leg stays the contract later than the main. Basis is empty
+        # when that leg does not expire after the spot proxy.
+        if spot is not None:
+            raw, ann, gap = spread_vs(spot, far)
     return {
         "date": trade_date,
         "contract": main["display"],
         "px": float(main["price"]),
         "far": far_name,
         "far_px": far_px,
+        "spot": None if spot is None else spot["display"],
+        "spot_px": None if spot is None else float(spot["price"]),
         "ann": ann,
         "raw": raw,
         "gap": gap,
@@ -346,7 +386,7 @@ def historical_percentile(points: list[tuple[date, float | None]], asof: date,
 
 
 def score_snapshot(history: list[dict], live: dict | None, asof: date):
-    """Basis and price percentiles of the live virtual main vs spliced history.
+    """Basis percentile of daily ann, and price percentile of the spliced main.
 
     The live row is appended (replacing a same-day history row) before the
     ratio splice, so past prices are expressed in today's contract units and
