@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>中国商品期货贴水跟踪</title>
-  <meta name="description" content="SHFE、DCE、CZCE、INE、广期所活跃商品的虚拟主力连续、次活跃远月年化贴水，以及近3年贴水分位和价格分位。静态页读取 data/latest.json。" />
+  <meta name="description" content="SHFE、DCE、CZCE、INE、广期所活跃商品的主力连续、次活跃远月年化贴水，以及近3年贴水分位和价格分位。静态页读取 data/latest.json。" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;display=swap" rel="stylesheet" />
@@ -28,17 +28,23 @@
     .num { font-variant-numeric: tabular-nums; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
     table { border-collapse: collapse; }
     th, td { white-space: nowrap; }
-    .overview thead th { position: sticky; top: 4.4rem; background: #0f172a; z-index: 10; }
+    /* overflow-x:auto is the sticky scrollport, so top must stay 0 or the
+       header row drops onto the first data row. Once the table fits, let the
+       viewport be the scrollport and pin the header under the site header. */
+    .table-wrap { overflow-x: auto; }
+    .overview thead th { position: sticky; top: 0; background: #0f172a; z-index: 10; }
     .overview th:first-child, .overview td:first-child {
       position: sticky; left: 0; background: #020617; z-index: 5;
     }
-    .overview thead th:first-child { z-index: 15; background: #0f172a; }
+    .overview thead th:first-child { z-index: 15; background: #0f172a; top: 0; left: 0; }
     .chip { border: 1px solid #334155; background: #0f172a; color: #cbd5e1; }
     .chip[aria-pressed="true"] { background: #b45309; border-color: #d97706; color: white; }
     .row-virtual { background: rgba(6, 78, 59, 0.35); }
     .row-far { background: rgba(12, 74, 110, 0.28); }
-    @media (max-width: 768px) {
-      .overview thead th { top: 0; }
+    @media (min-width: 1280px) {
+      .table-wrap { overflow: visible; }
+      .overview thead th,
+      .overview thead th:first-child { top: 5.25rem; }
     }
   </style>
 </head>
@@ -48,7 +54,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-xl md:text-2xl font-bold tracking-tight">中国商品期货贴水跟踪</h1>
-          <p class="text-slate-400 text-sm mt-1">虚拟主力连续 · 按持仓+成交挑活跃期限 · 近 3 年贴水分位与价格分位</p>
+          <p class="text-slate-400 text-sm mt-1">主力连续 · 按持仓+成交挑活跃期限 · 近 3 年贴水分位与价格分位</p>
         </div>
         <div class="flex items-center gap-3 text-sm">
           <span id="ts" class="text-slate-400 num">—</span>
@@ -62,12 +68,12 @@
     <section class="rounded-xl border border-amber-700/40 bg-amber-950/30 p-4 md:p-5">
       <h2 class="text-amber-300 font-semibold mb-2">这不是股指分红模型</h2>
       <p class="text-slate-300 text-sm leading-relaxed">
-        商品没有分红可扣。远月比虚拟主力便宜，记为<span class="text-emerald-300">贴水</span>（近高远低）；远月更贵，记为<span class="text-red-300">升水</span>，多头换月要付升水税。
+        商品没有分红可扣。远月比主力便宜，记为<span class="text-emerald-300">贴水</span>（近高远低）；远月更贵，记为<span class="text-red-300">升水</span>，多头换月要付升水税。
         曲线来自仓储、资金和便利收益，库存一松就会翻转。交割月还有限仓和仓单，纸面价差不一定成交得了。
       </p>
       <p class="text-slate-300 text-sm leading-relaxed mt-2">
-        <strong class="text-slate-100">虚拟主力只有一条。</strong>
-        每个交易日，得分 = 持仓量 + 成交量，最高的那张合约就是当天的虚拟主力。谁变成第一，连续序列就换过去并做比率拼接。
+        <strong class="text-slate-100">主力只有一条。</strong>
+        每个交易日，得分 = 持仓量 + 成交量，最高的那张合约就是当天的主力。谁变成第一，连续序列就换过去并做比率拼接。
         页面上的合约代码就是这条序列的当前腿，不另列一条交易所主力。
         对照腿是<strong class="text-sky-300">次活跃远月</strong>：到期更晚、得分最高的一张，豆粕常常是 1 月对 5 月，而不是紧邻的下一月。
       </p>
@@ -75,7 +81,7 @@
         <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-600"></span>贴水（远月更便宜）绿</span>
         <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-600"></span>升水（远月更贵）红</span>
         <span class="text-slate-400">贴水分位越高 = 近 3 年里远月折价越深</span>
-        <span class="text-slate-400">价格分位越高 = 虚拟主力越接近近 3 年高位（不是贴水）</span>
+        <span class="text-slate-400">价格分位越高 = 主力越接近近 3 年高位（不是贴水）</span>
       </div>
     </section>
 
@@ -95,12 +101,12 @@
           </select>
         </label>
       </div>
-      <div class="table-wrap overflow-x-auto rounded-xl border border-slate-800">
+      <div class="table-wrap rounded-xl border border-slate-800">
         <table class="overview min-w-full text-sm">
           <thead>
             <tr class="text-left text-xs text-slate-400 border-b border-slate-800">
               <th class="px-3 py-2 font-medium">品种</th>
-              <th class="px-3 py-2 font-medium">虚拟主力</th>
+              <th class="px-3 py-2 font-medium">主力</th>
               <th class="px-3 py-2 font-medium text-right">最新</th>
               <th class="px-3 py-2 font-medium text-right hidden sm:table-cell">剩余</th>
               <th class="px-3 py-2 font-medium">次活跃远月</th>
@@ -121,13 +127,13 @@
     <footer class="rounded-xl border border-slate-800 bg-slate-900/50 p-5 text-sm text-slate-400 space-y-3">
       <h2 class="text-slate-200 font-semibold">方法论与商品侧注意</h2>
       <ul class="list-disc list-inside space-y-1.5 leading-relaxed">
-        <li><strong class="text-slate-300">虚拟主力</strong>：每个交易日得分 = 持仓量 + 成交量，最高者即当天的腿。并列时先比持仓，再比成交，再取更近到期。领先换手就换月，并用比率拼接；末日价格就是可交易价。没有第二条「主力」。</li>
-        <li><strong class="text-slate-300">次活跃远月</strong>：到期月份晚于虚拟主力、得分最高的合约。曲线上其他行只是活跃期限，用来看结构。</li>
-        <li><strong class="text-slate-300">价差</strong> = 虚拟主力价 − 次活跃远月价。正数表示远月更便宜。</li>
-        <li><strong class="text-slate-300">年化贴水</strong> = 价差 / 虚拟主力价 × 365 / 两个到期日之差。正 = 贴水，负 = 升水。相距不足 7 个自然日不年化。不扣利率，不用 252。</li>
+        <li><strong class="text-slate-300">主力</strong>：每个交易日得分 = 持仓量 + 成交量，最高者即当天的腿。并列时先比持仓，再比成交，再取更近到期。领先换手就换月，并用比率拼接；末日价格就是可交易价。没有第二条「主力」。</li>
+        <li><strong class="text-slate-300">次活跃远月</strong>：到期月份晚于主力、得分最高的合约。曲线上其他行只是活跃期限，用来看结构。</li>
+        <li><strong class="text-slate-300">价差</strong> = 主力价 − 次活跃远月价。正数表示远月更便宜。</li>
+        <li><strong class="text-slate-300">年化贴水</strong> = 价差 / 主力价 × 365 / 两个到期日之差。正 = 贴水，负 = 升水。相距不足 7 个自然日不年化。不扣利率，不用 252。</li>
         <li><strong class="text-slate-300">不用现货。</strong>港口价、品牌价往往不是交割品。铁矿的干湿吨和品牌升贴水、厂库升贴水，都会把「现货 − 期货」做成伪基差。</li>
         <li><strong class="text-slate-300">贴水分位</strong>：近 3 个日历年里，年化贴水 ≤ 今天的交易日占比，不含行情日当天。<strong class="text-emerald-300">越高 = 远月折价越深</strong>。低于 30 个交易日不显示。</li>
-        <li><strong class="text-slate-300">价格分位</strong>：同一窗口里，比率拼接后的虚拟主力价格 ≤ 今天可交易价的占比。<strong class="text-sky-300">越高 = 越接近这段窗口的高位</strong>。这不是贴水。</li>
+        <li><strong class="text-slate-300">价格分位</strong>：同一窗口里，比率拼接后的主力价格 ≤ 今天可交易价的占比。<strong class="text-sky-300">越高 = 越接近这段窗口的高位</strong>。这不是贴水。</li>
         <li><strong class="text-slate-300">到期日</strong>是工作日近似，未剔除春节、国庆等法定节假日：上期所金属和黑色为合约月 15 日遇周末顺延；原油、燃料油、低硫燃料油为交割月前最后一个工作日；大商所、郑商所、广期所按合约月第 10 个工作日。</li>
         <li><strong class="text-slate-300">库存</strong>：新浪日 K 的结算价（结算为 0 时用收盘），存在 <code class="text-slate-400">data/history/series.json</code>。工作日 16:00（北京时间）的 Action 追加当天。快照曲线用最新价。</li>
         <li>仓储和便利收益不是股息，可以在几周内从贴水变成升水税。交割月流动性会塌，个人客户常常不能持仓进入交割月。</li>
@@ -223,7 +229,7 @@
     function tipPrice(p) {
       const n = p.price_n || 0;
       if (p.price_pct == null) return "样本 " + n + " 日，不足 30 不显示。价格分位越高 = 越接近近3年高位。";
-      return "近3年 " + n + " 个交易日中，拼接后的虚拟主力价格不高于今天的占 " + p.price_pct + "%。越高 = 越接近窗口高位。这不是贴水。";
+      return "近3年 " + n + " 个交易日中，拼接后的主力价格不高于今天的占 " + p.price_pct + "%。越高 = 越接近窗口高位。这不是贴水。";
     }
 
     function sparkSVG(values) {
@@ -313,7 +319,7 @@
       const body = terms.map((t) => {
         const cls = t.role === "virtual" ? "row-virtual" : t.role === "far" ? "row-far" : "";
         const badge = t.role === "virtual"
-          ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white align-middle">虚拟主力</span>'
+          ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white align-middle">主力</span>'
           : t.role === "far"
             ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-sky-700 text-white align-middle">次活跃远月</span>'
             : "";
@@ -339,7 +345,7 @@
         '<th class="px-3 py-1 font-medium text-right">近高远低</th>' +
         '<th class="px-3 py-1 font-medium text-right">年化</th>' +
         "</tr></thead><tbody>" + body + "</tbody></table></div>" +
-        '<p class="text-[11px] text-slate-500 mt-2 px-1">得分 = 持仓 + 成交。虚拟主力是得分最高的一行。次活跃远月是更远月份里得分最高的一行。近高远低为正表示这两个到期日之间曲线向下（贴水）。</p>';
+        '<p class="text-[11px] text-slate-500 mt-2 px-1">得分 = 持仓 + 成交。主力是得分最高的一行。次活跃远月是更远月份里得分最高的一行。近高远低为正表示这两个到期日之间曲线向下（贴水）。</p>';
     }
 
     function cardHTML(p) {
@@ -349,8 +355,8 @@
       const headline = !v
         ? (p.error || "暂无报价")
         : (!f
-          ? "虚拟主力 " + v.symbol + "，没有更远的活跃月份，年化贴水不算。"
-          : "虚拟主力 " + v.symbol + " 对次活跃远月 " + f.symbol + "，价差 " + fmtPts(f.raw) + "，间隔 " + (f.gap == null ? "—" : f.gap) + " 天。");
+          ? "主力 " + v.symbol + "，没有更远的活跃月份，年化贴水不算。"
+          : "主力 " + v.symbol + " 对次活跃远月 " + f.symbol + "，价差 " + fmtPts(f.raw) + "，间隔 " + (f.gap == null ? "—" : f.gap) + " 天。");
       return '<article id="card-' + p.code + '" class="scroll-mt-24 rounded-xl border border-slate-800 bg-slate-900 p-4 md:p-5">' +
         '<div class="flex flex-wrap items-start justify-between gap-3">' +
           '<div>' +
