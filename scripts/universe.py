@@ -1,5 +1,7 @@
 """China commodity universe for the virtual-main basis tracker.
 
+Contract multiplier and exchange minimum margin live in specs.py.
+
 Expiry rules are weekday approximations of exchange last-trading-day
 conventions. Statutory holidays are not removed; see README.
 """

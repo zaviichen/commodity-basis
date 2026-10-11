@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import roll
+import specs
 import universe
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -384,7 +385,7 @@ def live_product(product: dict, today: date, history_rows: list[dict]) -> dict:
             terms.append(item)
     meta_start = history_rows[0]["date"].isoformat() if history_rows else None
     meta_end = history_rows[-1]["date"].isoformat() if history_rows else None
-    return {
+    snap = {
         "code": product["code"],
         "name": product["name"],
         "exchange": product["exchange"],
@@ -431,6 +432,7 @@ def live_product(product: dict, today: date, history_rows: list[dict]) -> dict:
         "terms": terms,
         "error": None if contracts else "无活跃合约报价",
     }
+    return specs.apply(snap)
 
 
 def selected_products(only: str) -> list[dict]:
@@ -560,6 +562,7 @@ def main() -> int:
                 "terms": [],
                 "error": str(exc),
             }
+            snap = specs.apply(snap)
         snapshots.append(snap)
         # Append the live session into history so the next run keeps the splice.
         if snap.get("virtual") and snap.get("as_of"):
@@ -602,9 +605,14 @@ def main() -> int:
         ann_txt = "—" if ann is None else f"{ann * 100:.1f}%"
         virt = (snap.get("virtual") or {}).get("symbol", "—")
         spot_name = (snap.get("spot_proxy") or {}).get("symbol", "—")
+        money = snap.get("notional")
+        margin = snap.get("margin_min")
+        money_txt = "—" if money is None else f"{money:.0f}"
+        margin_txt = "—" if margin is None else f"{margin:.0f}"
         print(
             f"  {product['code']} spot {spot_name} virtual {virt} ann {ann_txt} "
-            f"basis {snap.get('basis_pct')} price {snap.get('price_pct')}",
+            f"basis {snap.get('basis_pct')} price {snap.get('price_pct')} "
+            f"notional {money_txt} margin {margin_txt}",
             flush=True,
         )
 
@@ -629,6 +637,7 @@ def main() -> int:
                 "spot": "页面现货是近月未到期合约代理。不使用港口价、品牌价或厂库现金价。",
                 "history_price": "日K结算价（结算为0时用收盘）。快照曲线用最新价。",
                 "expiry": "未到期合约：上期所金属与黑色为合约月15日遇周末顺延；燃料油/原油/低硫燃料油为交割月前最后工作日；其余为大商所/郑商所/广期所风格的合约月第10个工作日。未剔除法定节假日。",
+                **specs.methodology_fields(),
             },
             "products": snapshots,
         }
