@@ -43,7 +43,7 @@
     .overview thead .sort-btn {
       display: flex;
       align-items: center;
-      gap: 0.2rem;
+      gap: 0.35rem;
       width: 100%;
       margin: 0;
       padding: 0.5rem 0.75rem;
@@ -63,16 +63,36 @@
       color: #f8fafc;
     }
     .sort-mark {
-      display: inline-block;
-      flex: 0 0 1em;
-      width: 1em;
-      font-size: 0.7rem;
-      line-height: 1;
-      text-align: center;
+      position: relative;
+      flex: 0 0 8px;
+      width: 8px;
+      height: 10px;
       color: #64748b;
+    }
+    .sort-mark::before,
+    .sort-mark::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+    }
+    .sort-mark::before {
+      top: 0;
+      border-bottom: 4px solid currentColor;
+      opacity: 0.55;
+    }
+    .sort-mark::after {
+      bottom: 0;
+      border-top: 4px solid currentColor;
+      opacity: 0.55;
     }
     .overview thead th[aria-sort="ascending"] .sort-mark,
     .overview thead th[aria-sort="descending"] .sort-mark { color: #fbbf24; }
+    .overview thead th[aria-sort="ascending"] .sort-mark::before,
+    .overview thead th[aria-sort="descending"] .sort-mark::after { opacity: 1; }
+    .overview thead th[aria-sort="ascending"] .sort-mark::after,
+    .overview thead th[aria-sort="descending"] .sort-mark::before { opacity: 0; }
     .overview thead th[aria-sort="ascending"] .sort-btn,
     .overview thead th[aria-sort="descending"] .sort-btn { color: #f8fafc; }
     .row-virtual { background: rgba(6, 78, 59, 0.35); }
@@ -137,14 +157,14 @@
         <table class="overview min-w-full text-sm">
           <thead>
             <tr class="text-left text-xs text-slate-400 border-b border-slate-800">
-              <th class="font-medium" data-sort="name" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>品种</span><span class="sort-mark" aria-hidden="true">↕</span></button></th>
-              <th class="font-medium" data-sort="main" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>主力</span><span class="sort-mark" aria-hidden="true">↕</span></button></th>
-              <th class="font-medium text-right" data-sort="price" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true">↕</span><span>最新</span></button></th>
-              <th class="font-medium text-right hidden sm:table-cell" data-sort="dte" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true">↕</span><span>剩余</span></button></th>
-              <th class="font-medium" data-sort="far" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>次活跃远月</span><span class="sort-mark" aria-hidden="true">↕</span></button></th>
-              <th class="font-medium text-right" data-sort="ann" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true">↕</span><span>年化贴水</span></button></th>
-              <th class="font-medium text-right" data-sort="basis" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true">↕</span><span>贴水分位</span></button></th>
-              <th class="font-medium text-right" data-sort="pricePct" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true">↕</span><span>价格分位</span></button></th>
+              <th class="font-medium" data-sort="name" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>品种</span><span class="sort-mark" aria-hidden="true"></span></button></th>
+              <th class="font-medium" data-sort="main" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>主力</span><span class="sort-mark" aria-hidden="true"></span></button></th>
+              <th class="font-medium text-right" data-sort="price" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true"></span><span>最新</span></button></th>
+              <th class="font-medium text-right hidden sm:table-cell" data-sort="dte" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true"></span><span>剩余</span></button></th>
+              <th class="font-medium" data-sort="far" aria-sort="none" scope="col"><button type="button" class="sort-btn"><span>次活跃远月</span><span class="sort-mark" aria-hidden="true"></span></button></th>
+              <th class="font-medium text-right" data-sort="ann" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true"></span><span>年化贴水</span></button></th>
+              <th class="font-medium text-right" data-sort="basis" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true"></span><span>贴水分位</span></button></th>
+              <th class="font-medium text-right" data-sort="pricePct" aria-sort="none" scope="col"><button type="button" class="sort-btn sort-btn-end"><span class="sort-mark" aria-hidden="true"></span><span>价格分位</span></button></th>
             </tr>
           </thead>
           <tbody id="overviewBody">
@@ -340,10 +360,8 @@
         const key = th.getAttribute("data-sort");
         const meta = SORT_META[key];
         const active = key === sortKey;
-        const mark = th.querySelector(".sort-mark");
         const btn = th.querySelector(".sort-btn");
         th.setAttribute("aria-sort", active ? (sortDir === "asc" ? "ascending" : "descending") : "none");
-        if (mark) mark.textContent = active ? (sortDir === "asc" ? "▲" : "▼") : "↕";
         if (btn && meta) {
           btn.setAttribute("aria-label", active
             ? meta.label + (sortDir === "asc" ? "，当前升序，点击改为降序" : "，当前降序，点击改为升序")
