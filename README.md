@@ -156,9 +156,10 @@ python3 -m http.server 8741
 `.github/workflows/update-basis.yml`
 
 - 定时：`0 8 * * 1-5`（UTC）= 北京时间周一至周五 16:00，每日一次
+- 页面右上角「手动刷新」打开 [Update commodity basis](https://github.com/zaviichen/commodity-basis/actions/workflows/update-basis.yml)。静态站不放令牌；需要仓库写入权限，并在该页点 **Run workflow**
 - 也可在 Actions 页手动 `workflow_dispatch`
 - 默认只拉最新报价并追加库存；全量重拉加 `--rebuild-history`
-- `data/latest.json` 或 `data/history/` 有变化才提交
+- `data/latest.json` 或 `data/history/` 有变化才提交。页面上的行情日和生成时间仍读 `data/latest.json` 的 `as_of` / `generated_at`，工作流提交并发布后刷新本页才变
 
 行情接口（均带 `Referer: https://finance.sina.com.cn`）：
 
