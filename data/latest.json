@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-23T18:27:16+08:00",
+  "generated_at": "2026-10-23T20:55:23+08:00",
   "as_of": "2026-10-23",
   "methodology": {
     "virtual_main": "单一连续序列：每个交易日得分=持仓量+成交量最高的合约。领先换手则换月拼接，不另设交易所主力。价格分位用这条序列，不把主力改叫现货。",
@@ -70,7 +70,7 @@
       "price_pct": 31,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.2879,
         0.2368,
@@ -323,7 +323,7 @@
       "price_pct": 28,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0984,
         0.0581,
@@ -576,7 +576,7 @@
       "price_pct": 23,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.1477,
         0.1139,
@@ -829,7 +829,7 @@
       "price_pct": 1,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.0348,
         -0.0145,
@@ -1082,7 +1082,7 @@
       "price_pct": 7,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0585,
         0.0016,
@@ -1335,7 +1335,7 @@
       "price_pct": 76,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.3483,
         0.3349,
@@ -1588,7 +1588,7 @@
       "price_pct": 99,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.1374,
         0.1414,
@@ -1841,7 +1841,7 @@
       "price_pct": 75,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.0236,
         -0.0342,
@@ -2094,7 +2094,7 @@
       "price_pct": 98,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0536,
         -0.0047,
@@ -2347,7 +2347,7 @@
       "price_pct": 21,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.1394,
         0.0,
@@ -2600,7 +2600,7 @@
       "price_pct": 97,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0199,
         0.0168,
@@ -2853,7 +2853,7 @@
       "price_pct": 79,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0804,
         0.0295,
@@ -3106,7 +3106,7 @@
       "price_pct": 93,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0843,
         0.0431,
@@ -3359,7 +3359,7 @@
       "price_pct": 4,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.009,
         0.0,
@@ -3612,7 +3612,7 @@
       "price_pct": 65,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.0221,
         -0.01,
@@ -3865,7 +3865,7 @@
       "price_pct": 71,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.0142,
         -0.0014,
@@ -4118,7 +4118,7 @@
       "price_pct": 98,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.1365,
         0.0348,
@@ -4372,7 +4372,7 @@
       "price_pct": 100,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.229,
         0.1809,
@@ -4625,7 +4625,7 @@
       "price_pct": 100,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.1444,
         0.2411,
@@ -4878,7 +4878,7 @@
       "price_pct": 99,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0189,
         0.0109,
@@ -5131,7 +5131,7 @@
       "price_pct": 99,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.067,
         0.005,
@@ -5384,7 +5384,7 @@
       "price_pct": 1,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.4001,
         0.3604,
@@ -5637,7 +5637,7 @@
       "price_pct": 0,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.3042,
         0.2425,
@@ -5890,7 +5890,7 @@
       "price_pct": 0,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.4184,
         0.3012,
@@ -6143,7 +6143,7 @@
       "price_pct": 97,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.1154,
         -0.1002,
@@ -6396,7 +6396,7 @@
       "price_pct": 99,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.0257,
         -0.0189,
@@ -6649,7 +6649,7 @@
       "price_pct": 19,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.0646,
         -0.0686,
@@ -6902,7 +6902,7 @@
       "price_pct": 100,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0356,
         0.0219,
@@ -7155,7 +7155,7 @@
       "price_pct": 8,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.012,
         -0.0274,
@@ -7408,7 +7408,7 @@
       "price_pct": 7,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0783,
         -0.0042,
@@ -7661,7 +7661,7 @@
       "price_pct": 61,
       "price_n": 725,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0123,
         0.0084,
@@ -7914,7 +7914,7 @@
       "price_pct": 6,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.0711,
         0.0652,
@@ -8167,7 +8167,7 @@
       "price_pct": 12,
       "price_n": 724,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.0663,
         0.1617,
@@ -8420,7 +8420,7 @@
       "price_pct": 45,
       "price_n": 727,
       "history_start": "2023-07-21",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         0.2921,
         0.3736,
@@ -8673,7 +8673,7 @@
       "price_pct": 9,
       "price_n": 727,
       "history_start": "2023-01-03",
-      "history_end": "2026-10-22",
+      "history_end": "2026-10-23",
       "spark": [
         -0.3814,
         -0.297,
